@@ -1,8 +1,11 @@
 Red [
-    Title: "JSON parser"
-    File: %json.red
-    Author: "Nenad Rakocevic, Qingtian Xie, Boleslav Březovský"
-    License: "BSD-3 - https://github.com/red/red/blob/master/BSD-3-License.txt"
+	Title: "JSON parser"
+	File: %json.red
+	Author: "Nenad Rakocevic, Qingtian Xie, Boleslav Březovský"
+	License: {
+		Distributed under the Boost Software License, Version 1.0.
+		See https://github.com/red/red/blob/master/BSL-License.txt
+	}
 ]
 
 json: context [

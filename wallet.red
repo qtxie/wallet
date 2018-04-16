@@ -1,9 +1,10 @@
 Red [
-	Title:	"RED Wallet (Demo)"
-	Author: "Xie Qingtian"
-	File: 	%wallet.red
-	Needs:	View
-	Tabs: 	4
+	Title:	 "RED Wallet"
+	Author:  "Xie Qingtian, Nenad Rakocevic"
+	File: 	 %wallet.red
+	Needs:	 View
+	Tabs: 	 4
+	Icon:	 %assets/RED-token.ico
 	Rights:  "Copyright (C) 2018 Red Foundation. All rights reserved."
 	License: {
 		Distributed under the Boost Software License, Version 1.0.
@@ -22,6 +23,8 @@ Red [
 ;#include %trezor.red
 
 wallet: context [
+
+	logo.png: load/as #include-binary %assets/logo.png 'png
 
 	list-font: make font! [name: get 'font-fixed size: 11]
 
@@ -108,7 +111,7 @@ wallet: context [
 		btn-sign/text: "Sign"
 	]
 
-	on-send: func [face [object!] event [event!]][
+	do-send: func [face [object!] event [event!]][
 		if addr-list/data [
 			if addr-list/selected = -1 [addr-list/selected: 1]
 			addr-from/text: copy/part pick addr-list/data addr-list/selected 42
@@ -119,7 +122,7 @@ wallet: context [
 		]
 	]
 
-	on-select-network: func [face [object!] event [event!] /local idx][
+	do-select-network: func [face [object!] event [event!] /local idx][
 		idx: face/selected
 		net-name: pick face/data idx - 1 * 2 + 1
 		network:  pick networks idx
@@ -127,7 +130,7 @@ wallet: context [
 		if connected? [connect-device]
 	]
 
-	on-select-token: func [face [object!] event [event!] /local idx][
+	do-select-token: func [face [object!] event [event!] /local idx][
 		idx: face/selected
 		token-name: pick face/data idx - 1 * 2 + 1
 		token-contract: select contracts token-name
@@ -177,7 +180,7 @@ wallet: context [
 		process-events
 	]
 
-	on-sign-tx: func [face [object!] event [event!] /local tx][
+	do-sign-tx: func [face [object!] event [event!] /local tx][
 		unless check-data [exit]
 
 		notify-user
@@ -234,7 +237,7 @@ wallet: context [
 		]
 	]
 
-	on-confirm: func [face [object!] event [event!] /local result][
+	do-confirm: func [face [object!] event [event!] /local result][
 		result: rpc-call network 'eth_sendRawTransaction reduce [
 			rejoin ["0x" enbase/base signed-data 16]
 		]
@@ -248,13 +251,13 @@ wallet: context [
 		]
 	]
 
-	on-more-addr: func [face event][
+	do-more-addr: func [face event][
 		unless connected? [exit]
 		connect-device/next
 		if page > 0 [btn-prev/enabled?: yes]
 	]
 
-	on-prev-addr: func [face event][
+	do-prev-addr: func [face event][
 		unless connected? [exit]
 		if page = 1 [
 			btn-prev/enabled?: no
@@ -271,7 +274,7 @@ wallet: context [
 		label "Amount to Send:" amount-field: field 300 hint "Not less than 0.0001" label-unit: label 50 return
 		label "Gas Price:"		gas-price:	  field 360 "21" return
 		label "Gas Limit:"		gas-limit:	  field 360 "21000" return
-		pad 200x10 btn-sign: button 60 "Sign" :on-sign-tx
+		pad 200x10 btn-sign: button 60 "Sign" :do-sign-tx
 	]
 
 	confirm-sheet: layout [
@@ -286,18 +289,40 @@ wallet: context [
 		label "Gas Limit:" 		info-limit:	  info return
 		label "Max TX Fee:" 	info-fee:	  info return
 		label "Nonce:"			info-nonce:	  info return
-		pad 164x10 button "Cancel" [signed-data: none unview] button "Send" :on-confirm
+		pad 164x10 button "Cancel" [signed-data: none unview] button "Send" :do-confirm
 	]
 
 	ui: layout [
-		title "Red Wallet"
-		text 60 "Device:" dev: text 160 "<No Device>"
-		btn-send: button 66 "Send" :on-send disabled
-		token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :on-select-token
-		net-list: drop-list 70 data ["mainnet" 1 "rinkeby" 2 "kovan" 3] select 2 :on-select-network
-		return
-		addr-list: text-list font list-font 450x195 return
-		pad 300x0 btn-prev: button "Prev" disabled :on-prev-addr btn-more: button "More" :on-more-addr
+		title "RED Wallet"
+		tab-panel [
+			"Accounts" [
+				text 60 "Device:" dev: text 160 "<No Device>"
+				btn-send: button 66 "Send" :do-send disabled
+				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
+				net-list: drop-list 70 data ["mainnet" 1 "rinkeby" 2 "kovan" 3] select 2 :do-select-network
+				return
+				addr-list: text-list font list-font 450x195 return
+				pad 300x0 btn-prev: button "Prev" disabled :do-prev-addr btn-more: button "More" :do-more-addr
+			]
+			"Send" [
+				style label: text 100 middle origin 10x20
+				label "From Address:"	addr-from:	  label 360 return
+				label "To Address:"		addr-to:	  field 360 return
+				label "Amount to Send:" amount-field: field 300 hint "Not less than 0.0001" label-unit: label 50 return
+				label "Gas Price:"		gas-price:	  field 360 "21" return
+				label "Gas Limit:"		gas-limit:	  field 360 "21000" return
+				pad 200x10 btn-sign: button 60 "Sign" :do-sign-tx
+			]
+			"Settings" [
+			
+			]
+			"About" [
+				below
+				h4 480 center bold "RedWallet v0.1.0"
+				text 480 center "Copyright 2018 - Red Foundation"
+				at 90x10 image logo.png
+			]
+		]
 	]
 
 	unlock-dev-dlg: layout [

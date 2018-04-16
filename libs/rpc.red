@@ -1,4 +1,15 @@
-Red []
+Red [
+	Title:	 "RPC library"
+	Author:  "Xie Qingtian, Nenad Rakocevic"
+	File: 	 %rpc.red
+	Needs:	 View
+	Tabs: 	 4
+	Rights:  "Copyright (C) 2018 Red Foundation. All rights reserved."
+	License: {
+		Distributed under the Boost Software License, Version 1.0.
+		See https://github.com/red/red/blob/master/BSL-License.txt
+	}
+]
 
 context [
 
@@ -8,7 +19,7 @@ context [
 		User-Agent: (
 			form reduce [
 				{Red Wallet version}
-				0.1.0	;read %version.red
+				0.1.0
 				{for} system/platform/OS
 			]
 		)
