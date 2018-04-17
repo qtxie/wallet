@@ -166,7 +166,7 @@ wallet: context [
 		]
 		if page > 0 [btn-prev/enabled?: enabled?]
 		btn-more/enabled?: enabled?
-		net-list/enabled?: enabled?
+		;net-list/enabled?: enabled?
 		token-list/enabled?: enabled?
 		process-events
 	]
@@ -299,13 +299,15 @@ wallet: context [
 				text 60 "Device:" dev: text 160 "<No Device>"
 				btn-send: button 66 "Send" :do-send disabled
 				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
-				net-list: drop-list 70 data ["mainnet" 1 "rinkeby" 2 "kovan" 3] select 2 :do-select-network
 				return
 				addr-list: text-list font list-font 450x195 return
-				pad 300x0 btn-prev: button "Prev" disabled :do-prev-addr btn-more: button "More" :do-more-addr
+				pad 300x0
+				btn-prev: button "Prev" disabled :do-prev-addr
+				btn-more: button "More" :do-more-addr
 			]
 			"Send" [
-				style label: text 100 middle origin 10x20
+				origin 10x20
+				style label: text 100 middle
 				label "From Address:"	addr-from:	  label 360 return
 				label "To Address:"		addr-to:	  field 360 return
 				label "Amount to Send:" amount-field: field 300 hint "Not less than 0.0001" label-unit: label 50 return
@@ -314,7 +316,23 @@ wallet: context [
 				pad 200x10 btn-sign: button 60 "Sign" :do-sign-tx
 			]
 			"Settings" [
-			
+				style label: text 130 right
+				pad 70x20
+				label "Network:"
+				net-list: drop-list 70
+					data ["mainnet" 1 "rinkeby" 2 "kovan" 3]
+					select 2
+					:do-select-network
+				return
+				pad 70x0
+				label "Default Gas Price:"
+				gas-default: field "" 100 text "Gwei" left
+				return
+				pad 70x0
+				label "Servers"
+				servers-list: drop-down 
+					data ["Red Foundation nodes" "Infura nodes" "localhost:80"]
+					select 1
 			]
 			"About" [
 				below
