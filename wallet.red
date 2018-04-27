@@ -118,7 +118,7 @@ wallet: context [
 			gas-limit/text: either token-contract ["79510"]["21000"]
 			reset-sign-button
 			label-unit/text: token-name
-			view/flags send-dialog 'modal
+			;view/flags send-dialog 'modal
 		]
 	]
 
@@ -266,17 +266,6 @@ wallet: context [
 		connect-device/prev
 	]
 
-	send-dialog: layout [
-		title "Send Ether & Tokens"
-		style label: text 100 middle
-		label "From Address:"	addr-from:	  label 360 return
-		label "To Address:"		addr-to:	  field 360 hint "0x0000000000000000000000000000000000000000" return
-		label "Amount to Send:" amount-field: field 300 hint "Not less than 0.0001" label-unit: label 50 return
-		label "Gas Price:"		gas-price:	  field 360 "21" return
-		label "Gas Limit:"		gas-limit:	  field 360 "21000" return
-		pad 200x10 btn-sign: button 60 "Sign" :do-sign-tx
-	]
-
 	confirm-sheet: layout [
 		title "Confirm Transaction"
 		style label: text 120 right bold
@@ -297,11 +286,15 @@ wallet: context [
 		tab-panel [
 			"Accounts" [
 				text 60 "Device:" dev: text 160 "<No Device>"
-				btn-send: button 66 "Send" :do-send disabled
+				pad 90x0
+				button "Refresh" disabled
 				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
 				return
+				text "My Addresses" pad 270x0 text "Balances" right return pad 0x-10
 				addr-list: text-list font list-font 450x195 return
-				pad 300x0
+				info-status: text 200 "Plug your key to start!"
+				btn-send: button 66 "Send" :do-send disabled
+				pad 30x0
 				btn-prev: button "Prev" disabled :do-prev-addr
 				btn-more: button "More" :do-more-addr
 			]
