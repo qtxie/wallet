@@ -29,6 +29,7 @@ wallet: context [
 	list-font: make font! [name: get 'font-fixed size: 11]
 
 	signed-data: none
+	addr-per-page: 5
 
 	networks: [
 		https://eth.red-lang.org/mainnet
@@ -72,8 +73,8 @@ wallet: context [
 			addresses: clear []
 			if next [page: page + 1]
 			if prev [page: page - 1]
-			n: page * 5
-			loop 5 [
+			n: page * addr-per-page
+			loop addr-per-page [
 				addr: Ledger/get-address n
 				either addr [
 					if need-refresh? [
@@ -88,15 +89,19 @@ wallet: context [
 					need-refresh?: yes
 					exit
 				]
-				amount: either token-contract [
+				append addresses rejoin [addr "   <loading>"]
+				addr-list/data: addresses
+				process-events
+				n: n + 1
+			]
+			update-ui yes
+			foreach address addr-list/data [
+				replace address "<loading>" probe form either token-contract [
 					eth/get-balance-token network token-contract addr
 				][
 					eth/get-balance network addr
 				]
-				append addresses rejoin [addr "   " amount]
-				addr-list/data: addresses
 				process-events
-				n: n + 1
 			]
 			update-ui yes
 		][
@@ -283,7 +288,7 @@ wallet: context [
 		title "RED Wallet"
 		tab-panel [
 			"Accounts" [
-				text 60 "Device:" dev: text 160 "<No Device>"
+				text 60 "Device:" dev: text 160 bold font-color red
 				pad 90x0
 				button "Refresh" disabled
 				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
@@ -327,8 +332,9 @@ wallet: context [
 			]
 			"About" [
 				below
-				h4 480 center bold "RedWallet v0.1.0"
+				h4 480 center bold "RED Wallet"
 				text 480 center "Copyright 2018 - Red Foundation"
+				text 480 center "version 0.1.0"
 				at 90x10 image logo.png
 			]
 		]
