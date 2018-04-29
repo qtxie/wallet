@@ -21,6 +21,10 @@ Red [
 #include %keys/Ledger/ledger.red
 ;#include %trezor.red
 
+#system [
+	with gui [#include %libs/usb-monitor.reds]
+]
+
 wallet: context [
 
 	logo.png: load/as #include-binary %assets/logo.png 'png
