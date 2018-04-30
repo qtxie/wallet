@@ -62,7 +62,12 @@ wallet: context [
 	page: 0
 	address-index: 0
 
-	process-events: does [loop 5 [do-events/no-wait]]
+	process-events: does [loop 10 [do-events/no-wait]]
+	
+	form-amount: func [value [float!]][
+		pos: find value: form value #"."
+		head insert/dup value #" " 5 - ((index? pos) - 1)
+	]
 
 	connect-device: func [/prev /next /local addresses addr n amount][
 		update-ui no
@@ -96,7 +101,8 @@ wallet: context [
 			]
 			update-ui yes
 			foreach address addr-list/data [
-				replace address "<loading>" probe form either token-contract [
+				addr: copy/part address find address space
+				replace address "<loading>" form-amount either token-contract [
 					eth/get-balance-token network token-contract addr
 				][
 					eth/get-balance network addr
@@ -294,7 +300,7 @@ wallet: context [
 				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
 				return
 				text "My Addresses" pad 270x0 text "Balances" right return pad 0x-10
-				addr-list: text-list font list-font 450x195 return
+				addr-list: text-list font list-font 500x195 return
 				info-status: text 200 "Plug your key to start!"
 				btn-send: button 66 "Send" :do-send disabled
 				pad 30x0
