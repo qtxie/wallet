@@ -125,11 +125,12 @@ wallet: context [
 	do-send: func [face [object!] event [event!]][
 		if addr-list/data [
 			if addr-list/selected = -1 [addr-list/selected: 1]
+			network-to/text: net-name
 			addr-from/text: copy/part pick addr-list/data addr-list/selected 42
 			gas-limit/text: either token-contract ["79510"]["21000"]
 			reset-sign-button
 			label-unit/text: token-name
-			;view/flags send-dialog 'modal
+			tabs/selected: 2
 		]
 	]
 
@@ -138,7 +139,6 @@ wallet: context [
 		net-name: pick face/data idx - 1 * 2 + 1
 		network:  pick networks idx
 		explorer: pick explorers idx
-		if connected? [connect-device]
 	]
 
 	do-select-token: func [face [object!] event [event!] /local idx][
@@ -179,6 +179,8 @@ wallet: context [
 		token-list/enabled?: enabled?
 		process-events
 	]
+	
+	enable-sending: func [mode [logic!]][foreach-face tabs/pane/2 [face/enabled?: mode]]
 
 	notify-user: does [
 		btn-sign/enabled?: no
@@ -292,30 +294,30 @@ wallet: context [
 
 	ui: layout [
 		title "RED Wallet"
-		tab-panel [
+		tabs: tab-panel [
 			"Accounts" [
-				text 60 "Device:" dev: text 160 bold font-color red
+				text 50 "Device:" dev: text 160 left bold
 				pad 90x0
-				button "Refresh" disabled
-				token-list: drop-list 48 data ["ETH" 1 "RED" 2]  select 1 :do-select-token
+				button "Refresh" disabled :connect-device
+				token-list: drop-list 48 data ["ETH" 1 "RED" 2] select 1 :do-select-token
 				return
-				text "My Addresses" pad 270x0 text "Balances" right return pad 0x-10
+				text "My Addresses" pad 260x0 text "Balances" right return pad 0x-10
 				addr-list: text-list font list-font 500x195 return
 				info-status: text 200 "Plug your key to start!"
-				btn-send: button 66 "Send" :do-send disabled
-				pad 30x0
-				btn-prev: button "Prev" disabled :do-prev-addr
+				btn-send: button "Send" :do-send disabled pad 30x0
+				btn-prev: button "Prev" :do-prev-addr disabled 
 				btn-more: button "More" :do-more-addr
 			]
 			"Send" [
 				origin 10x20
 				style label: text 100 middle
+				label "Network:"		network-to:	  label 360 return
 				label "From Address:"	addr-from:	  label 360 return
 				label "To Address:"		addr-to:	  field 360 return
 				label "Amount to Send:" amount-field: field 300 hint "Not less than 0.0001" label-unit: label 50 return
 				label "Gas Price:"		gas-price:	  field 360 "21" return
-				label "Gas Limit:"		gas-limit:	  field 360 "21000" return
-				pad 200x10 btn-sign: button 60 "Sign" :do-sign-tx
+				label "Gas Limit:"		gas-limit:	  field 360 "21000" return pad 200x10
+				btn-sign: button 60 "Sign" :do-sign-tx
 			]
 			"Settings" [
 				style label: text 130 right
@@ -344,6 +346,7 @@ wallet: context [
 				at 90x10 image logo.png
 			]
 		]
+		do [enable-sending no]
 	]
 
 	unlock-dev-dlg: layout [
