@@ -29,6 +29,41 @@ wallet: context [
 	list-font: make font! [name: get 'font-fixed size: 11]
 
 	signed-data: none
+	
+	prefs: object [
+		per-page: 5
+		network:  'rinkeby
+		tokens:   []
+	]
+	
+	states: make reactor! [
+		device:	  none
+		refresh?: no
+		network:  'rinkeby
+		page:	  0
+		index:	  0
+	]
+	
+	networks: [
+		;------- Name ----- Network URL ----------------------- Block explorer URL -------------
+		mainnet ["mainnet"	https://eth.red-lang.org/mainnet	https://etherscan.io/tx/]
+		rinkeby ["Rinkeby"  https://eth.red-lang.org/rinkeby	https://rinkeby.etherscan.io/tx/]
+		kowan	["Kovan"	https://eth.red-lang.org/kovan		https://kovan.etherscan.io/tx/]
+	]
+	
+	tokens: [
+		;---- Name ----- Decimals -- Contract address -- Description --
+		ETH ["ETH"		18	- "Ethereum token"]
+		RED ["RED"		18
+			#either debug? [
+				"43df37f66b8b9fececcc3031c9c1d2511db17c42"	;-- RED token contract on Rinkeby
+			][
+				"76960Dccd5a1fe799F7c29bE9F19ceB4627aEb2f"	;-- RED token contract on Mainnet
+			]
+			"Red Community Token"
+		]
+	]
+	
 	addr-per-page: 5
 
 	networks: [
