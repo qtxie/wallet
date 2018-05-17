@@ -6,6 +6,7 @@ Red [
 	Needs:	 View
 	Version: 0.1.0
 	Tabs: 	 4
+	Company: "Fullstack technologies"
 	Rights:  "Copyright (C) 2018 Red Foundation. All rights reserved."
 	License: {
 		Distributed under the Boost Software License, Version 1.0.
@@ -338,6 +339,26 @@ wallet: context [
 		label "Gas Price:"		gas-price:	  field 120 "21" return
 		label "Gas Limit:"		gas-limit:	  field 120 "21000" return
 		pad 215x10 btn-sign: button 60 "Sign" :do-sign-tx
+	]
+
+	do-add-payment: func [face event][
+		
+	]
+
+	batch-send-dialog: layout [
+		title "Batch Payment"
+		payment-list: text-list font list-font 600x400 below
+		button "Add"	:do-add-payment
+		button "Edit"	:do-edit-payment
+		button "Remove" :do-remove-payment
+		button "Import" :do-import-payments
+		button "Export" :do-export-payments
+		pad 0x235
+		button "Send"	:do-batch-payment
+	]
+
+	add-payment-dialog: layout [
+		
 	]
 
 	confirm-sheet: layout [
