@@ -346,6 +346,19 @@ wallet: context [
 		
 	]
 
+	do-edit-payment: func [face event][]
+	do-remove-payment: func [face event][]
+
+	do-import-payments: function [face event][
+		if f: request-file [
+			payment-list/data: load f
+		]
+	]
+
+	do-export-payments: func [face event][]
+
+	do-batch-payment: func [face event][]
+
 	batch-send-dialog: layout [
 		title "Batch Payment"
 		payment-list: text-list font list-font 600x400 below
@@ -359,7 +372,14 @@ wallet: context [
 	]
 
 	add-payment-dialog: layout [
-		
+		title "Add a payment"
+		style field: field 360 font [name: font-fixed size: 10]
+		group-box [
+			text "Name:" field return
+			text "Address:" field return
+			text "Amount:" field
+		] return
+		pad 160x0 button "Add" pad 20x0 button "Cancel"
 	]
 
 	confirm-sheet: layout [
@@ -476,6 +496,7 @@ wallet: context [
 			on-menu: func [face [object!] event [event!]][
 				switch event/picked [
 					copy	[copy-addr]
+					batch	[view batch-send-dialog]
 				]
 			]
 			on-change: func [face event][
@@ -486,6 +507,7 @@ wallet: context [
 
 		addr-list/menu: [
 			"Copy address"		copy
+			"Batch payment"		batch
 		]
 	]
 
