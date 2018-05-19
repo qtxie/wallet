@@ -64,6 +64,7 @@ wallet: context [
 	connected?:		no
 	address-index:	0
 	page:			0
+	batch-results:	make block! 4
 
 	process-events: does [loop 10 [do-events/no-wait]]
 	
@@ -211,14 +212,49 @@ wallet: context [
 		process-events
 	]
 
-	do-sign-tx: func [face [object!] event [event!] /local tx nonce price limit amount][
+	sign-transaction: func [
+		from-addr	[string!]
+		to-addr		[string!]
+		gas-price	[string!]
+		gas-limit	[string!]
+		amount		[string!]
+		nonce		[integer!]
+		/local price limit tx value
+	][
+		price: eth/gwei-to-wei gas-price
+		limit: to-integer gas-limit
+		value: eth/eth-to-wei amount
+
+		either token-contract [
+			tx: reduce [
+				nonce
+				price
+				limit
+				debase/base token-contract 16			;-- to address
+				eth/eth-to-wei 0						;-- value
+				rejoin [								;-- data
+					#{a9059cbb}							;-- method ID
+					debase/base eth/pad64 copy skip to-addr 2 16
+					eth/pad64 i256-to-bin value
+				]
+			]
+		][
+			tx: reduce [
+				nonce
+				price
+				limit
+				debase/base skip to-addr 2 16			;-- to address
+				value
+				#{}										;-- data
+			]
+		]
+
+		ledger/get-signed-data address-index tx
+	]
+
+	do-sign-tx: func [face [object!] event [event!] /local nonce][
 		unless check-data [exit]
 
-		notify-user
-
-		price: eth/gwei-to-wei gas-price/text			;-- gas price
-		limit: to-integer gas-limit/text				;-- gas limit
-		amount: eth/eth-to-wei amount-field/text		;-- send amount
 		nonce: eth/get-nonce network addr-from/text		;-- nonce
 		if nonce = -1 [
 			unview
@@ -234,31 +270,15 @@ wallet: context [
 			exit
 		]
 
-		either token-contract [
-			tx: reduce [
-				nonce
-				price
-				limit
-				debase/base token-contract 16			;-- to address
-				eth/eth-to-wei 0						;-- value
-				rejoin [								;-- data
-					#{a9059cbb}							;-- method ID
-					debase/base eth/pad64 copy skip addr-to/text 2 16
-					eth/pad64 i256-to-bin amount
-				]
-			]
-		][
-			tx: reduce [
-				nonce
-				price
-				limit
-				debase/base skip addr-to/text 2 16		;-- to address
-				amount
-				#{}										;-- data
-			]
-		]
+		notify-user
 
-		signed-data: ledger/get-signed-data address-index tx
+		signed-data: sign-transaction
+			addr-from/text
+			addr-to/text
+			gas-price/text
+			gas-limit/text
+			amount-field/text
+			nonce
 
 		either all [
 			signed-data
@@ -275,15 +295,14 @@ wallet: context [
 				" Ether"
 			]
 			info-nonce/text: mold tx/1
-			unview
 			view/flags confirm-sheet 'modal
 		][
 			if signed-data = 'token-error [
-				unview
 				view/flags contract-data-dlg 'modal
 			]
-			reset-sign-button
 		]
+		reset-sign-button
+		unview
 	]
 
 	do-confirm: func [face [object!] event [event!] /local result][
@@ -342,12 +361,19 @@ wallet: context [
 		pad 215x10 btn-sign: button 60 "Sign" :do-sign-tx
 	]
 
-	do-add-payment: func [face event][
-		
+	do-add-payment: func [face event /local entry][
+		entry: rejoin [
+			pad payment-name/text 12
+			payment-addr/text "        "
+			payment-amount/text
+		]
+		either add-payment-btn/text = "Add" [
+			append payment-list/data entry
+		][
+			poke payment-list/data payment-list/selected entry
+		]
+		unview
 	]
-
-	do-edit-payment: func [face event][]
-	do-remove-payment: func [face event][]
 
 	do-import-payments: function [face event][
 		if f: request-file [
@@ -357,29 +383,106 @@ wallet: context [
 
 	do-export-payments: func [face event][]
 
-	do-batch-payment: func [face event][]
+	do-check-result: function [face event][
+		foreach result batch-results [
+			either string? result [
+				browse rejoin [explorer result]
+			][							;-- error
+				tx-error/text: rejoin ["Error! Please try again^/^/" form result]
+				view/flags tx-error-dlg 'modal
+			]
+		]
+	]
+
+	do-batch-payment: function [face event][
+		batch-result-btn/visible?: no
+		from-addr: copy/part pick addr-list/data addr-list/selected 42
+		nonce: eth/get-nonce network from-addr
+		if nonce = -1 [
+			view/flags nonce-error-dlg 'modal
+			exit
+		]
+
+		;-- Edge case: ledger key may locked in this moment
+		unless string? ledger/get-address 0 [
+			view/flags unlock-dev-dlg 'modal
+			exit
+		]
+
+		batch-send-btn/enabled?: no
+		foreach entry payment-list/data [
+			addr: find entry "0x"
+			to-addr: copy/part addr 42
+			amount: trim copy skip addr 42
+			signed-data: sign-transaction
+				from-addr
+				to-addr
+				batch-gas-price/text
+				"21000"
+				amount
+				nonce
+
+			append entry either all [
+				signed-data
+				binary? signed-data
+			][
+				result: eth/call-rpc network 'eth_sendRawTransaction reduce [
+					rejoin ["0x" enbase/base signed-data 16]
+				]
+				append batch-results result
+				either string? result ["  √"]["  ×"]
+			][
+				if signed-data = 'token-error [
+					view/flags contract-data-dlg 'modal
+					break
+				]
+				"  ×"
+			]
+			nonce: nonce + 1
+		]
+		batch-result-btn/visible?: yes
+		batch-send-btn/enabled?: yes
+	]
 
 	batch-send-dialog: layout [
 		title "Batch Payment"
-		payment-list: text-list font list-font 600x400 below
-		button "Add"	:do-add-payment
-		button "Edit"	:do-edit-payment
-		button "Remove" :do-remove-payment
+		style lbl:   text  360 middle font [name: font-fixed size: 11]
+		text "Account:" batch-addr-from: lbl
+		text "Gas Price:"  batch-gas-price: field 48 "21" return
+
+		payment-list: text-list font list-font data [] 600x400 below
+		button "Add"	[
+			add-payment-dialog/text: "Add payment"
+			add-payment-btn/text: "Add"
+			view/flags add-payment-dialog 'modal
+		]
+		button "Edit"	[
+			add-payment-dialog/text: "Edit payment"
+			entry: pick payment-list/data payment-list/selected
+			payment-name/text: copy/part entry find entry #" "
+			payment-addr/text: copy/part addr: find entry "0x" 42
+			payment-amount/text: trim copy skip addr 42
+			add-payment-btn/text: "OK"
+			view/flags add-payment-dialog 'modal
+		]
+		button "Remove" [remove at payment-list/data payment-list/selected]
 		button "Import" :do-import-payments
 		button "Export" :do-export-payments
-		pad 0x235
-		button "Send"	:do-batch-payment
+		pad 0x165
+		batch-result-btn: button "Results" :do-check-result
+		batch-send-btn: button "Send"	:do-batch-payment
+		do [batch-result-btn/visible?: no]
 	]
 
 	add-payment-dialog: layout [
-		title "Add a payment"
 		style field: field 360 font [name: font-fixed size: 10]
 		group-box [
-			text "Name:" field return
-			text "Address:" field return
-			text "Amount:" field
+			text "Name:" payment-name: field return
+			text "Address:" payment-addr: field return
+			text "Amount:" payment-amount: field
 		] return
-		pad 160x0 button "Add" pad 20x0 button "Cancel"
+		pad 160x0 add-payment-btn: button "Add" :do-add-payment
+		pad 20x0 button "Cancel" [unview]
 	]
 
 	confirm-sheet: layout [
@@ -489,6 +592,7 @@ wallet: context [
 		ui/actors: make object! [
 			on-close: func [face event][
 				ledger/close
+				unview/all
 			]
 		]
 
@@ -496,7 +600,10 @@ wallet: context [
 			on-menu: func [face [object!] event [event!]][
 				switch event/picked [
 					copy	[copy-addr]
-					batch	[view batch-send-dialog]
+					batch	[
+						batch-addr-from/text: copy/part pick addr-list/data addr-list/selected 42
+						view batch-send-dialog
+					]
 				]
 			]
 			on-change: func [face event][
