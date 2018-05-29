@@ -64,7 +64,6 @@ wallet: context [
 	connected?:		no
 	address-index:	0
 	page:			0
-	batch-results:	make block! 4
 
 	process-events: does [loop 10 [do-events/no-wait]]
 	

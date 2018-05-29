@@ -9,6 +9,9 @@ Red [
 	}
 ]
 
+payment-stop?: no
+batch-results: make block! 4
+
 do-add-payment: func [face event /local entry][
 	entry: rejoin [
 		pad payment-name/text 12
@@ -46,7 +49,17 @@ do-check-result: function [face event][
 	]
 ]
 
-do-batch-payment: function [face event][
+do-batch-payment: func [
+	face	[object!]
+	event	[event!]
+	/local from-addr nonce entry addr to-addr amount result idx
+][
+	if batch-send-btn/text = "Stop" [
+		payment-stop?: yes
+		exit
+	]
+	clear batch-results
+	payment-stop?: no
 	batch-result-btn/visible?: no
 	from-addr: copy/part pick addr-list/data addr-list/selected 42
 	nonce: eth/get-nonce network from-addr
@@ -61,7 +74,7 @@ do-batch-payment: function [face event][
 		exit
 	]
 
-	batch-send-btn/enabled?: no
+	batch-send-btn/text: "Stop"
 	idx: 1
 	foreach entry payment-list/data [
 		payment-list/selected: idx
@@ -77,6 +90,8 @@ do-batch-payment: function [face event][
 			amount
 			nonce
 
+		if payment-stop? [break]
+
 		append entry either all [
 			signed-data
 			binary? signed-data
@@ -85,7 +100,7 @@ do-batch-payment: function [face event][
 				rejoin ["0x" enbase/base signed-data 16]
 			]
 			append batch-results result
-			either string? result ["  √"]["  ×"]
+			either string? result [nonce: nonce + 1 "  √"]["  ×"]
 		][
 			if signed-data = 'token-error [
 				view/flags contract-data-dlg 'modal
@@ -93,11 +108,10 @@ do-batch-payment: function [face event][
 			]
 			"  ×"
 		]
-		nonce: nonce + 1
 		idx: idx + 1
 	]
-	batch-result-btn/visible?: yes
-	batch-send-btn/enabled?: yes
+	unless empty? batch-results [batch-result-btn/visible?: yes]
+	batch-send-btn/text: "Send"
 ]
 
 batch-send-dialog: layout [
