@@ -12,6 +12,17 @@ Red [
 payment-stop?: no
 batch-results: make block! 4
 
+sanitize-payments: func [data [block! none!] /local entry c][
+	if block? data [
+		foreach entry data [
+			if find "√×" last entry [
+				clear skip tail entry -3
+			]
+		]
+	]
+	data
+]
+
 do-add-payment: func [face event /local entry][
 	entry: rejoin [
 		pad payment-name/text 12
@@ -28,13 +39,13 @@ do-add-payment: func [face event /local entry][
 
 do-import-payments: function [face event][
 	if f: request-file [
-		payment-list/data: load f
+		payment-list/data: sanitize-payments load f
 	]
 ]
 
 do-export-payments: func [face event][
 	if f: request-file/save [
-		save f payment-list/data
+		save f sanitize-payments payment-list/data
 	]
 ]
 

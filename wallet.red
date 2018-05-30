@@ -489,6 +489,13 @@ wallet: context [
 			]
 		]
 
+		batch-send-dialog/actors: make object! [
+			on-close: func [face event][
+				sanitize-payments payment-list/data
+				batch-result-btn/visible?: no
+			]
+		]
+
 		addr-list/menu: [
 			"Copy address"		copy
 			"Batch payment"		batch
