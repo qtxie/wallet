@@ -40,6 +40,26 @@ hid: context [
 	#define kIOHIDReportTypeOutput 				1
 	#define	ETIMEDOUT							60
 
+this!: alias struct! [vtbl [integer!]]
+
+QueryInterface!: alias function! [
+	this		[this!]
+	riid		[int-ptr!]
+	ppvObject	[int-ptr!]
+	return:		[integer!]
+]
+
+AddRef!: alias function! [
+	this		[this!]
+	return:		[integer!]
+]
+
+Release!: alias function! [
+	this		[this!]
+	return:		[integer!]
+]
+
+
 
 	hid_mgr: as int-ptr! 0
 	kCFStringEncodingUTF32LE: 1C000100h
@@ -389,11 +409,38 @@ hid: context [
 				report			[byte-ptr!]
 				reportLength	[integer!]
 				return: 		[integer!]
-				]
+			]
 			IOHIDDeviceUnscheduleFromRunLoop: "IOHIDDeviceUnscheduleFromRunLoop" [
 				device 			[int-ptr!]
 				runloop			[int-ptr!]
 				runLoopMode		[int-ptr!]
+			]
+			IOServiceMatching: "IOServiceMatching" [
+				name			[c-string!]
+				return:			[integer!]
+			]
+			IOServiceGetMatchingServices: "IOServiceGetMatchingServices" [
+				masterPort		[integer!]
+				matching		[integer!]
+				existing		[int-ptr!]
+				return:			[integer!]
+			]
+			IOIteratorNext: "IOIteratorNext" [
+				iterate			[integer!]
+				return:			[int-ptr!]
+			]
+			IORegistryEntryGetName: "IORegistryEntryGetName" [
+				dev				[int-ptr!]
+				name			[byte-ptr!]
+				return:			[integer!]
+			]
+			IOCreatePlugInInterfaceForService: "IOCreatePlugInInterfaceForService" [
+				dev				[int-ptr!]
+				typeID			[int-ptr!]
+				interfaceID		[int-ptr!]
+				interface		[int-ptr!]
+				score			[int-ptr!]
+				return:			[integer!]
 			]
 		]
 		"/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation" cdecl [
@@ -477,7 +524,26 @@ hid: context [
 			CFRunLoopWakeUp: "CFRunLoopWakeUp" [
 				rl 			[int-ptr!]
 			]
-
+			CFUUIDGetConstantUUIDWithBytes: "CFUUIDGetConstantUUIDWithBytes" [
+				allocator	[int-ptr!]
+				byte0		[byte!]
+				byte1		[byte!]
+				byte2		[byte!]
+				byte3		[byte!]
+				byte4		[byte!]
+				byte5		[byte!]
+				byte6		[byte!]
+				byte7		[byte!]
+				byte8		[byte!]
+				byte9		[byte!]
+				byte10		[byte!]
+				byte11		[byte!]
+				byte12		[byte!]
+				byte13		[byte!]
+				byte14		[byte!]
+				byte15		[byte!]
+				return:		[int-ptr!]
+			]
 		]
 	]
 
@@ -1330,7 +1396,7 @@ hid: context [
 						ts/nsec: ts/nsec - 1000000000
 					]
 					res: cond_timedwait dev :dev/condition :dev/mutex ts
-					gui/do-events yes
+					;gui/do-events yes
 					bytes_read: case [
 						res = 0 [
 							tm: milliseconds
@@ -1466,4 +1532,74 @@ hid: context [
 		;--free the structure itself
 		free as byte-ptr! dev
 	]
+
+	kIOUSBDeviceUserClientTypeID: CFUUIDGetConstantUUIDWithBytes null
+		#"^(9D)" #"^(C7)" #"^(B7)" #"^(80)" #"^(9E)" #"^(C0)" #"^(11)" #"^(D4)"
+		#"^(A5)" #"^(4F)" #"^(00)" #"^(0A)" #"^(27)" #"^(05)" #"^(28)" #"^(61)"
+	kIOCFPlugInInterfaceID: CFUUIDGetConstantUUIDWithBytes null
+	    #"^(C2)" #"^(44)" #"^(E8)" #"^(58)" #"^(10)" #"^(9C)" #"^(11)" #"^(D4)"
+		#"^(91)" #"^(D4)" #"^(00)" #"^(50)" #"^(E4)" #"^(C6)" #"^(42)" #"^(6F)"
+	kIOUSBDeviceInterfaceID: [5C8187D0h 11D49EF3h 0A00458Bh 61280527h]
+
+	init-usb: func [][
+		
+	]
+
+	enumerate-usb: func [
+		vendor-id	[integer!]
+		product-id 	[integer!]
+		;return: 	[hid-device-info]
+		/local
+			root 			[hid-device-info]
+			cur_dev 		[hid-device-info]
+			num_devices		[integer!]
+			i 				[integer!]
+			device_set 		[int-ptr!]
+			device_array	[int-ptr!]
+			dev_vid			[integer!]
+			dev_pid			[integer!]
+			buf 			[byte-ptr!]
+			dev 			[int-ptr!]
+			tmp 			[hid-device-info]
+			iter			[integer!]
+			dict			[integer!]
+			interface		[integer!]
+			p-itf			[integer!]
+			score			[integer!]
+			this			[this!]
+			itf				[IOUSBInterfaceInterface]
+	][
+		iter: 0
+		dict: IOServiceMatching "IOUSBHostDevice"
+		probe IOServiceGetMatchingServices kIOMasterPortDefault dict :iter
+		?? iter
+		buf: as byte-ptr! system/stack/allocate 32
+		while [
+			dev: IOIteratorNext iter
+			dev <> null
+		][
+			probe IORegistryEntryGetName dev buf
+probe as c-string! buf
+if buf/1 <> #"T" [continue]
+			interface: 0
+			p-itf: as-integer :interface
+			score: 0
+			probe IOCreatePlugInInterfaceForService
+					dev
+					kIOUSBDeviceUserClientTypeID
+					kIOCFPlugInInterfaceID
+					:p-itf
+					:score
+?? p-itf
+?? score
+			this: as this! p-itf
+			itf: as IOUSBInterfaceInterface this/vtbl
+			probe itf/QueryInterface this kIOUSBDeviceInterfaceID :interface
+?? interface
+			
+		]
+	]
 ]
+
+hid/enumerate-usb 0 0
+
