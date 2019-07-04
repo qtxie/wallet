@@ -1,0 +1,3 @@
+[submodule "libs/libsecp256k1"]
+	path = libs/libsecp256k1
+	url = https://github.com/bitbegin/eth-wallet.git

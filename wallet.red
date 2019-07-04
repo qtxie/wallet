@@ -671,7 +671,7 @@ wallet: context [
 
 	ui: layout compose [
 		title "RED Wallet"
-		text 50 "Device:" dev: drop-list 125 :do-select-device
+		text 50 "Device:" dev: drop-list 125 data ["Software Key"] :do-select-device
 		btn-send: button "Send" :do-send disabled
 		token-list: drop-list data ["Add Tokens"] 80 select 4 :do-select-token
 		net-list:   drop-list data ["Mainnet" "Testnet"] select 1 :do-select-network

@@ -20,7 +20,7 @@ Red [
 keys: context [
 
 	dongle:			none		;-- low-level device handle
-	list:			[]
+	list:			["Software Key"]
 	key:			none		;-- already connected device
 	current:		none		;-- current connecting device
 	index:			0
